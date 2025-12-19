@@ -1,1 +1,7 @@
-# Car_Sales_Analysis
+Introduction: 
+
+Objective: 
+
+Tools & Technologies:
+
+Key Insights: 
