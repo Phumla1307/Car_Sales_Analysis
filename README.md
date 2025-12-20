@@ -1,4 +1,5 @@
 Introduction: 
+
 This project analyzes daily transactional and pricing data for vehicles sold by Bright Motors. The dataset supports the incoming Head of Sales, whose mission is to expand the dealership network, improve sales performance, and optimize inventory. As a Data Analyst, the goal is to extract actionable insights that will guide future sales and marketing strategies. 
 
 As part of my learning journey in SQL and data analytics, I approached this case as a portfolio project. It demonstrates my ability to 
