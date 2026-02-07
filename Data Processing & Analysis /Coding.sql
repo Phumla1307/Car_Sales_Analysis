@@ -45,10 +45,30 @@ INSERT INTO SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP VALUES
 ('WA','Washington'),
 ('WI','Wisconsin');
 
+--Create table SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP(raw_make STRING,canonical_make STRING); 
+Insert Into  SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP VALUES ('Chevrolet', 'Chevrolet'), 
+('chev truck', 'Chevrolet'), 
+('Dodge', 'Dodge'), ('dodge tk', 'Dodge'), 
+('Ford', 'Ford'), ('ford tk', 'Ford'), 
+('ford truck', 'Ford'), 
+('Hyundai', 'Hyundai'), 
+('hyundai tk', 'Hyundai'), 
+('Land Rover', 'Land Rover'), 
+('landrover', 'Land Rover'), 
+('Mazda', 'Mazda'), 
+('mazda tk', 'Mazda'), 
+('mercedes', 'Mercedes'), 
+('mercedes-b', 'Mercedes'), 
+('Mercedes-Benz', 'Mercedes'), 
+('Volkswagen', 'Volkswagen'), 
+('vw','Volkswagen');
+
+
 with base AS 
 (
 SELECT year,  
-    make,  
+    -- Normalized make for joining
+    REGEXP_REPLACE(UPPER(TRIM(make)), '[^A-Z0-9 ]', '') AS normalized_make,
     case when make is null or trim(make) = '' then 'Unknown' else initcap(make) end as car_make,
     case when model is null or trim(model) = '' then 'Unknown' else initcap(model) end as model_type, 
     case when body is null or trim(body) = '' then 'Unknown' else initcap(body)end as body_type, 
@@ -102,9 +122,10 @@ select count(distinct seller) as distinct_sellers from SNOWFLAKE_LEARNING_DB.PUB
     where not regexp_like(saledate,'^[0-9]+$')
 )
 
+
 select 
     b.year,
-    b.make, 
+    COALESCE(lkp.canonical_make, b.car_make) AS standardized_make,
     b.model_type, 
     b.body_type,
     b.transmission_cleaned,
@@ -137,4 +158,24 @@ select
  
 From base b
 LEFT JOIN SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP sl
-    On UPPER(b.state) = sl.ABBREV;
+    On UPPER(b.state) = sl.ABBREV
+Left Join SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
+    On b.normalized_make = lkp.raw_make;
+
+--Extract Insights *****NEEDS WORK
+-- Top Car Make by Profit Margin 
+Create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.base as 
+SELECT 
+    COALESCE(lkp.canonical_make, b.car_make) AS standardized_make,
+    AVG(b.avg_profit_margin) AS avg_margin,
+    COUNT(*) AS total_sales
+FROM base b
+LEFT JOIN SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
+    ON b.normalized_make = lkp.raw_make
+GROUP BY standardized_make
+ORDER BY avg_margin DESC;
+
+--Sales by State 
+--Weekend vs Weekday Performance 
+--Condition vs Profitability 
+--Seller Performance 
