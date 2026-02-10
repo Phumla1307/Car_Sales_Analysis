@@ -63,9 +63,8 @@ Insert Into  SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP VALUES ('Chevrolet', '
 ('Volkswagen', 'Volkswagen'), 
 ('vw','Volkswagen');
 
-
-with base AS 
-(
+--Creating a permanent virtual table of cleaned data 
+create or replace view snowflake_learning_db.public.base AS
 SELECT year,  
     -- Normalized make for joining
     REGEXP_REPLACE(UPPER(TRIM(make)), '[^A-Z0-9 ]', '') AS normalized_make,
@@ -117,10 +116,8 @@ select count(distinct seller) as distinct_sellers from SNOWFLAKE_LEARNING_DB.PUB
         monthname(try_to_timestamp(left(saledate,24),'DY MON DD YYYY HH24:MI:SS')) as sale_month,
         year(try_to_timestamp(left(saledate,24),'DY MON DD YYYY HH24:MI:SS')) as sale_year,  
 
-    FROM
-      SNOWFLAKE_LEARNING_DB.PUBLIC.DATASET
-    where not regexp_like(saledate,'^[0-9]+$')
-)
+    FROM SNOWFLAKE_LEARNING_DB.PUBLIC.DATASET
+    where not regexp_like(saledate,'^[0-9]+$');
 
 
 select 
@@ -156,7 +153,7 @@ select
         else 'Weekday'
     end as day_classification,
  
-From base b
+From SNOWFLAKE_LEARNING_DB.PUBLIC.base b
 LEFT JOIN SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP sl
     On UPPER(b.state) = sl.ABBREV
 Left Join SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
@@ -164,17 +161,19 @@ Left Join SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
 
 --Extract Insights *****NEEDS WORK
 -- Top Car Make by Profit Margin 
-Create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.base as 
+Create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.car_make_insights as 
 SELECT 
     COALESCE(lkp.canonical_make, b.car_make) AS standardized_make,
     AVG(b.avg_profit_margin) AS avg_margin,
     COUNT(*) AS total_sales
-FROM base b
+FROM SNOWFLAKE_LEARNING_DB.PUBLIC.base b
 LEFT JOIN SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
     ON b.normalized_make = lkp.raw_make
 GROUP BY standardized_make
 ORDER BY avg_margin DESC;
 
+select * 
+from SNOWFLAKE_LEARNING_DB.PUBLIC.car_make_insights;
 --Sales by State 
 --Weekend vs Weekday Performance 
 --Condition vs Profitability 
