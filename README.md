@@ -16,25 +16,14 @@ Objective:
 - Recommendations to increase dealership profitability and efficiency 
 
 Tools & Technologies:
-
-Project Planning 
-- Miro
-- Figma 
-
-Coding/ SQL Platforms 
-- Databricks
-- Snowflakes
-- Microsoft SQL Server
-- Google BigQuery
-
-Data Visualization 
-- Microsoft Excel
-- Power BI
-- Google Looker Studio
-
-Presentation / Reporting 
-- Microsoft PowerPoint
-- Canva
+ 
+- Miro (Project Planning)
+- Databricks (Data Processing & Coding)
+- Snowflakes (Data Processing & Coding)
+- Microsoft Excel (Data Visualization)
+- Google Looker Studio (Data Visualization)
+- Microsoft PowerPoint (Presentation & Reporting)
+- Canva (Presentation & Reporting)
 
 Key Insights: 
 
