@@ -1,7 +1,8 @@
-/*
+
 select * from SNOWFLAKE_LEARNING_DB.PUBLIC.DATASET
 limit 10;
-*/
+
+
 
 --Create a lookup table for state abbreviations 
 --CREATE TABLE OR REPLACE TABLE SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP (abbrev STRING, full_name STRING);
@@ -131,7 +132,7 @@ select
     b.car_interior, 
     b.seller_name,
     b.condition,
-    b.Condition_State,
+    b.condition_state,
     b.odometer,
     b.Odometer_Category,
     b.mmr,
@@ -159,7 +160,7 @@ LEFT JOIN SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP sl
 Left Join SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
     On b.normalized_make = lkp.raw_make;
 
---Extract Insights *****NEEDS WORK
+--EXTRACTING INSIGHTS 
 -- Top Car Make by Profit Margin 
 Create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.car_make_insights as 
 SELECT 
@@ -174,7 +175,61 @@ ORDER BY avg_margin DESC;
 
 select * 
 from SNOWFLAKE_LEARNING_DB.PUBLIC.car_make_insights;
+
 --Sales by State 
+create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.state_sales as
+select  
+    coalesce(sl.full_name, 'Unknown') as state_name,
+    count(*) as total_sales, 
+    avg(b.sellingprice) as avg_price
+from snowflake_learning_db.public.base b
+left join snowflake_learning_db.public.state_name_lookup sl
+    on upper(b.state) = sl.abbrev
+group by state_name
+order by total_sales DESC;
+
+select *
+from snowflake_learning_db.public.state_sales; --SNOWFLAKE_LEARNING_DB.PUBLIC.state_sales;
+    
+
 --Weekend vs Weekday Performance 
+create or replace view snowflake_learning_db.public.week_performance as
+select
+    case when b.sale_day in ('Saturday', 'Sunday') then 'Weekend' else 'Weekday' end as day_classification,
+    avg(b.sellingprice) as avg_price,
+    avg(b.avg_profit_margin) as avg_margin,
+    count(*) as total_sales
+from snowflake_learning_db.public.base b
+group by day_classification;
+
+select *
+from snowflake_learning_db.public.week_performance;
+    
+    
 --Condition vs Profitability 
+create or replace view snowflake_learning_db.public.condition_vs_profitability as
+select 
+        b.condition_state, 
+        avg(b.avg_profit_margin) as avg_margin,
+        case    
+            when b.avg_profit_margin < 0 then 'Loss'
+            when b.avg_profit_margin between 0 and 10 then 'Low Margin'
+            when b.avg_profit_margin between 10 and 25 then 'Moderate Margin'
+            else 'High Margin' end as profit_category, 
+    count(*) as total_sales
+from snowflake_learning_db.public.base b
+group by b.condition_state, profit_category
+order by profit_category desc; 
+
+select *
+from snowflake_learning_db.public.condition_vs_profitability; 
+
 --Seller Performance 
+create or replace view snowflake_learning_db.public.seller_performance as
+select b.seller_name, sum(b.sellingprice) as selling_price
+from snowflake_learning_db.public.base b
+group by b.seller_name
+order by selling_price desc;
+
+select * 
+from snowflake_learning_db.public.seller_performance;
