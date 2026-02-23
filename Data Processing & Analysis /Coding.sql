@@ -5,7 +5,7 @@ limit 10;
 
 
 --Create a lookup table for state abbreviations 
---CREATE TABLE OR REPLACE TABLE SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP (abbrev STRING, full_name STRING);
+--CREATE TABLE /*OR REPLACE TABLE*/ SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP (abbrev STRING, full_name STRING);
 INSERT INTO SNOWFLAKE_LEARNING_DB.PUBLIC.STATE_NAME_LOOKUP VALUES
 ('AB','Alberta'),
 ('AL','Alabama'),
@@ -150,7 +150,7 @@ select
   b.sale_year,
 
     case
-        when b.sale_day in ('Saturday', 'Sunday') then 'Weekend'
+        when b.sale_day in ('Sat', 'Sun') then 'Weekend'
         else 'Weekday'
     end as day_classification,
  
@@ -165,7 +165,7 @@ Left Join SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
 Create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.car_make_insights as 
 SELECT 
     COALESCE(lkp.canonical_make, b.car_make) AS standardized_make,
-    AVG(b.avg_profit_margin) AS avg_margin,
+    round(avg(b.avg_profit_margin)) AS avg_margin,
     COUNT(*) AS total_sales
 FROM SNOWFLAKE_LEARNING_DB.PUBLIC.base b
 LEFT JOIN SNOWFLAKE_LEARNING_DB.PUBLIC.CAR_MAKE_LOOKUP lkp
@@ -181,7 +181,7 @@ create or replace view SNOWFLAKE_LEARNING_DB.PUBLIC.state_sales as
 select  
     coalesce(sl.full_name, 'Unknown') as state_name,
     count(*) as total_sales, 
-    avg(b.sellingprice) as avg_price
+    round(avg(b.avg_profit_margin)) AS avg_margin,
 from snowflake_learning_db.public.base b
 left join snowflake_learning_db.public.state_name_lookup sl
     on upper(b.state) = sl.abbrev
@@ -189,28 +189,53 @@ group by state_name
 order by total_sales DESC;
 
 select *
-from snowflake_learning_db.public.state_sales; --SNOWFLAKE_LEARNING_DB.PUBLIC.state_sales;
+from snowflake_learning_db.public.state_sales;
     
 
---Weekend vs Weekday Performance 
+--Daily Performance 
+create or replace view snowflake_learning_db.public.day_performance as 
+select b.sale_day,
+        round(avg(b.sellingprice)) as avg_price,
+        round(avg(b.avg_profit_margin)) as avg_margin, 
+        count(*) as total_sales,
+from snowflake_learning_db.public.base b
+group by b.sale_day;
+
+select * 
+from snowflake_learning_db.public.day_performance;
+
+--Weekday vs Weekend Performance 
 create or replace view snowflake_learning_db.public.week_performance as
 select
-    case when b.sale_day in ('Saturday', 'Sunday') then 'Weekend' else 'Weekday' end as day_classification,
-    avg(b.sellingprice) as avg_price,
-    avg(b.avg_profit_margin) as avg_margin,
-    count(*) as total_sales
+    case when b.sale_day in ('Sat', 'Sun') then 'Weekend' else 'Weekday' end as day_classification,
+        round(avg(b.sellingprice)) as avg_price,
+        round(avg(b.avg_profit_margin)) as avg_margin, 
+        count(*) as total_sales
 from snowflake_learning_db.public.base b
 group by day_classification;
 
 select *
 from snowflake_learning_db.public.week_performance;
+
+--Sales distribution by year and  transmission
+create or replace view snowflake_learning_db.public.years_and_transmission_performance as 
+select b.year, 
+    round(avg(b.sellingprice)) as avg_price,
+    round(avg(b.avg_profit_margin)) as avg_margin, 
+    count(*) as total_sales
+from snowflake_learning_db.public.base b 
+group by b.year
+order by b.year DESC;
+
+select * 
+from snowflake_learning_db.public.years_and_transmission_performance;
     
     
 --Condition vs Profitability 
 create or replace view snowflake_learning_db.public.condition_vs_profitability as
 select 
         b.condition_state, 
-        avg(b.avg_profit_margin) as avg_margin,
+        round(avg(b.avg_profit_margin)) as avg_margin,
         case    
             when b.avg_profit_margin < 0 then 'Loss'
             when b.avg_profit_margin between 0 and 10 then 'Low Margin'
